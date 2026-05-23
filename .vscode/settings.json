@@ -1,0 +1,33 @@
+{
+  "cmake.configureOnOpen": true,
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.defaultVariants": {
+    "buildType": {
+      "default": "debug",
+      "choices": {
+        "debug": { "short": "Debug", "buildType": "Debug" },
+        "release": { "short": "Release", "buildType": "Release" }
+      }
+    }
+  },
+
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "C_Cpp.default.compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe",
+  "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/src",
+    "${workspaceFolder}/src/vcglib",
+    "C:/Users/alirz/Projects/vcpkg/vcpkg_installed/x64-windows/include"
+  ],
+  "C_Cpp.default.defines": [
+    "MESHLAB_SCALAR=float"
+  ],
+
+  "files.associations": {
+    "*.h": "cpp",
+    "*.cpp": "cpp"
+  },
+
+  "editor.formatOnSave": false
+}

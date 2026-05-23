@@ -1,0 +1,49 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "C:/Users/alirz/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "Qt5_DIR": "C:/Users/alirz/Projects/vcpkg/vcpkg_installed/x64-windows/share/cmake/Qt5",
+        "MESHLAB_SCALAR": "float"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug (MSVC x64)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (MSVC x64)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "displayName": "Build Debug",
+      "configurePreset": "debug",
+      "configuration": "Debug",
+      "jobs": 0
+    },
+    {
+      "name": "release",
+      "displayName": "Build Release",
+      "configurePreset": "release",
+      "configuration": "Release",
+      "jobs": 0
+    }
+  ]
+}

@@ -6,7 +6,7 @@
  * Visual Computing Lab                                            /\/|      *
  * ISTI - Italian National Research Council                           |      *
  *                                                                    \      *
- * All rights reserved.																											 *
+ * All rights reserved.                                                                                                                *
  * This program is free software; you can redistribute it and/or modify      *
  * it under the terms of the GNU General Public License as published by      *
  * the Free Software Foundation; either version 2 of the License, or         *
@@ -60,8 +60,5 @@ public:
 
 } // end namespace tri
 } // end namespace vcg
-// meshName: when non-empty, a JSONL collapse log is written to
-//   collapse_records/<meshName>_collapse_records.jsonl
-void QuadricSimplification   (CMeshO &m, int TargetFaceNum, bool Selected, vcg::tri::TriEdgeCollapseQuadricParameter &pp,    vcg::CallBackPos *cb, const std::string& meshName = "");
-void QuadricTexSimplification(CMeshO &m, int TargetFaceNum, bool Selected, vcg::tri::TriEdgeCollapseQuadricTexParameter &pp, vcg::CallBackPos *cb);
-
+void QuadricSimplification   (CMeshO &m,int  TargetFaceNum,    bool Selected, vcg::tri::TriEdgeCollapseQuadricParameter &pp,    vcg::CallBackPos *cb);
+void QuadricTexSimplification(CMeshO &m,int  TargetFaceNum,    bool Selected, vcg::tri::TriEdgeCollapseQuadricTexParameter &pp, vcg::CallBackPos *cb);

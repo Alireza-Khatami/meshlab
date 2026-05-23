@@ -29,6 +29,7 @@
 #include<vcg/complex/algorithms/local_optimization/tri_edge_collapse.h>
 #include<vcg/complex/algorithms/local_optimization.h>
 #include<vcg/complex/algorithms/stat.h>
+#include<vcg/complex/algorithms/local_optimization/collapse_event.h>
 
 
 namespace vcg{
@@ -181,6 +182,58 @@ public:
   
   void Execute(TriMeshType &m, BaseParameterClass * /*_pp*/)
   {
+    // --- Collapse logging (fires before the topology changes) ---
+    if (vcg::tri::gOnCollapse())
+    {
+      VertexType* v0 = this->pos.V(0);
+      VertexType* v1 = this->pos.V(1);
+
+      CollapseEvent ev;
+      ev.idx  = vcg::tri::gCollapseIdx()++;
+      ev.cost = static_cast<double>(this->_priority);
+
+      ev.v0.id     = static_cast<int>(vcg::tri::Index(m, *v0));
+      ev.v0.pos[0] = static_cast<float>(v0->P()[0]);
+      ev.v0.pos[1] = static_cast<float>(v0->P()[1]);
+      ev.v0.pos[2] = static_cast<float>(v0->P()[2]);
+
+      ev.v1.id     = static_cast<int>(vcg::tri::Index(m, *v1));
+      ev.v1.pos[0] = static_cast<float>(v1->P()[0]);
+      ev.v1.pos[1] = static_cast<float>(v1->P()[1]);
+      ev.v1.pos[2] = static_cast<float>(v1->P()[2]);
+
+      ev.new_pos[0] = static_cast<float>(this->optimalPos[0]);
+      ev.new_pos[1] = static_cast<float>(this->optimalPos[1]);
+      ev.new_pos[2] = static_cast<float>(this->optimalPos[2]);
+
+      // Walk VF star of v0 to collect deleted and modified faces
+      for (vcg::face::VFIterator<FaceType> vfi(v0); !vfi.End(); ++vfi)
+      {
+        FaceType* f = vfi.F();
+        if (f->IsD()) continue;
+
+        const bool hasV1 = (f->V(0)==v1 || f->V(1)==v1 || f->V(2)==v1);
+
+        CollapseEvent::Face fr;
+        fr.id = static_cast<int>(vcg::tri::Index(m, *f));
+        for (int k = 0; k < 3; ++k)
+        {
+          fr.vert_ids[k]    = static_cast<int>(vcg::tri::Index(m, *f->V(k)));
+          fr.vert_pos[k][0] = static_cast<float>(f->V(k)->P()[0]);
+          fr.vert_pos[k][1] = static_cast<float>(f->V(k)->P()[1]);
+          fr.vert_pos[k][2] = static_cast<float>(f->V(k)->P()[2]);
+        }
+
+        if (hasV1)
+          ev.deleted_faces.push_back(fr);
+        else
+          ev.modified_faces.push_back(fr);
+      }
+
+      vcg::tri::gOnCollapse()(ev);
+    }
+    // --- End logging ---
+
     CoordType newPos = this->optimalPos;
     QH::Qd(this->pos.V(1))+=QH::Qd(this->pos.V(0)); // v0 is deleted and v1 take the new position
     EdgeCollapser<TriMeshType,VertexPair>::Do(m, this->pos, newPos); 

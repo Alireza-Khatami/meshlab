@@ -1008,7 +1008,7 @@ std::map<std::string, QVariant> ExtraMeshFilterPlugin::applyFilter(
 		pp.QualityQuadricWeight=lastq_PlanarWeight = par.getFloat("PlanarWeight");
 		lastq_Selected = par.getBool("Selected");
 
-		QuadricSimplification(m.cm,TargetFaceNum,lastq_Selected,pp,  cb);
+		QuadricSimplification(m.cm, TargetFaceNum, lastq_Selected, pp, cb, m.label().toStdString());
 
 		if(par.getBool("AutoClean"))
 		{

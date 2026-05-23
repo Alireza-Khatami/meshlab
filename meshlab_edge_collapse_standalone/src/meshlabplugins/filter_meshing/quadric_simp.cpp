@@ -6,7 +6,7 @@
  * Visual Computing Lab                                            /\/|      *
  * ISTI - Italian National Research Council                           |      *
  *                                                                    \      *
- * All rights reserved.																											 *
+ * All rights reserved.                                                                                                                *
  * This program is free software; you can redistribute it and/or modify      *
  * it under the terms of the GNU General Public License as published by      *
  * the Free Software Foundation; either version 2 of the License, or         *
@@ -21,12 +21,11 @@
  ****************************************************************************/
 #include "meshfilter.h"
 #include "quadric_simp.h"
-#include <common/collapse_logger.h>
 
 using namespace vcg;
 using namespace std;
 
-void QuadricSimplification(CMeshO &m, int TargetFaceNum, bool Selected, tri::TriEdgeCollapseQuadricParameter &pp, CallBackPos *cb, const std::string& meshName)
+void QuadricSimplification(CMeshO &m,int  TargetFaceNum, bool Selected, tri::TriEdgeCollapseQuadricParameter &pp, CallBackPos *cb)
 {
   math::Quadric<double> QZero;
   QZero.SetZero();
@@ -54,19 +53,6 @@ void QuadricSimplification(CMeshO &m, int TargetFaceNum, bool Selected, tri::Tri
   
   if(pp.NormalCheck) pp.NormalThrRad = M_PI/4.0;
   
-  // --- Set up collapse logger if a mesh name was provided ---
-  CollapseLogger collapseLogger;
-  if (!meshName.empty())
-  {
-    collapseLogger.open(meshName);
-    vcg::tri::gCollapseIdx() = 0;
-    vcg::tri::gOnCollapse()  = [&collapseLogger](const vcg::tri::CollapseEvent& e)
-    {
-      collapseLogger.write(e);
-    };
-  }
-  // -----------------------------------------------------------
-
   vcg::LocalOptimization<CMeshO> DeciSession(m,&pp);
   cb(1,"Initializing simplification");
   DeciSession.Init<tri::MyTriEdgeCollapse >();
@@ -84,11 +70,6 @@ void QuadricSimplification(CMeshO &m, int TargetFaceNum, bool Selected, tri::Tri
   };
   
   DeciSession.Finalize<tri::MyTriEdgeCollapse >();
-
-  // --- Tear down logger ---
-  vcg::tri::gOnCollapse() = nullptr;
-  collapseLogger.close();
-  // ------------------------
   
   if(Selected) // Clear Writable flags 
   {
@@ -100,6 +81,7 @@ void QuadricSimplification(CMeshO &m, int TargetFaceNum, bool Selected, tri::Tri
   }
   tri::QHelper::TDp()=nullptr;
 }
+
 
 
 
