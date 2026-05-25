@@ -131,7 +131,18 @@ public:
   typedef HelperType QH;
   
   CoordType optimalPos;  // Local storage of the once computed optimal position of the collapse.
-  
+
+  // --- Diagnostics captured by ComputePriority for the initial-heap dump.
+  //     Let the QMAT port verify every ComputePriority stage, not just the
+  //     final cost (optimalPos / QuadErr / Apply / newQual / MinCos / gate). ---
+  double dbgQuadErr  = 0.0;  // ScaleFactor*Apply(opt), AFTER the QuadricEpsilon clamp
+  double dbgApply    = 0.0;  // raw qq.Apply(optimalPos)
+  double dbgApplyMid = 0.0;  // raw qq.Apply(midpoint)
+  double dbgGate     = 0.0;  // Qd(v0).Apply(mid)+Qd(v1).Apply(mid) (placement gate)
+  double dbgNewQual  = 0.0;  // newQual after the QualityThr clamp
+  double dbgMinCos   = 0.0;  // MinCos after the CosineThr clamp + 0..1 remap
+
+
   // Pointer to the vector that store the Write flags. Used to preserve them if you ask to preserve for the boundaries.
   static std::vector<typename TriMeshType::VertexPointer>  & WV(){
     static std::vector<typename TriMeshType::VertexPointer> _WV; return _WV;
@@ -473,10 +484,23 @@ public:
     if(pp->HardNormalCheck)
       if(CheckForFlip())  error = std::numeric_limits<ScalarType>::max();
     
+    // --- Capture the ComputePriority breakdown for the initial-heap dump.
+    //     v[1]->P() still holds optimalPos here; qq is the summed quadric. ---
+    {
+      CoordType midPt = (OldPos0 + OldPos1) / 2.0;
+      dbgApply    = qq.Apply(Point3d::Construct(this->optimalPos));
+      dbgApplyMid = qq.Apply(Point3d::Construct(midPt));
+      dbgGate     = QH::Qd(v[0]).Apply(Point3d::Construct(midPt))
+                  + QH::Qd(v[1]).Apply(Point3d::Construct(midPt));
+      dbgQuadErr  = QuadErr;
+      dbgNewQual  = newQual;
+      dbgMinCos   = MinCos;
+    }
+
     // Restore old position of v0 and v1
     v[0]->P()=OldPos0;
     v[1]->P()=OldPos1;
-    
+
     this->_priority = error;
     return this->_priority;
   }

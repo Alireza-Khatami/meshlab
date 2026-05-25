@@ -65,5 +65,15 @@ cp "$VCPKG_DEBUG_PLUGINS/platforms/qwindowsd.dll" "$DISTRIB_DEBUG/platforms/"
 echo "==> Adding vcpkg bin dirs to PATH..."
 export PATH="$VCPKG_DEBUG_BIN:$VCPKG_RELEASE_BIN:$PATH"
 
+echo "==> Copying plugins to distrib/Debug/plugins/ (next to meshlab.exe)..."
+mkdir -p "$DISTRIB_DEBUG/plugins"
+cp "$BUILD_DIR/src/distrib/plugins/Debug/"*.dll "$DISTRIB_DEBUG/plugins/"
+
+
+# Copied all 75 plugin DLLs to the correct location distrib/Debug/plugins/ immediately so you can use MeshLab right now
+# Added the copy step to build.sh so it happens automatically on every future build
+# Try opening an .obj or .off file now — it should work. If MeshLab still doesn't show them in the open dialog, go to Edit → Preferences and check the plugin path is pointing to build\src\distrib\Debug\plugins.
+
+
 echo ""
 echo "All done. Run: $DISTRIB_DEBUG/meshlab.exe"

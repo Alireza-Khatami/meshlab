@@ -70,7 +70,42 @@ void QuadricSimplification(CMeshO &m, int TargetFaceNum, bool Selected, tri::Tri
   vcg::LocalOptimization<CMeshO> DeciSession(m,&pp);
   cb(1,"Initializing simplification");
   DeciSession.Init<tri::MyTriEdgeCollapse >();
-  
+
+  if (!meshName.empty())
+  {
+    std::vector<InitialHeapEntry> heapEntries;
+    heapEntries.reserve(DeciSession.h.size());
+    for (const auto& he : DeciSession.h)
+    {
+      auto* collapse = dynamic_cast<tri::MyTriEdgeCollapse*>(he.locModPtr);
+      if (!collapse) continue;
+      InitialHeapEntry entry;
+      collapse->edgeCost(m, entry.v0_id, entry.v1_id, entry.cost, entry.opt,
+                         entry.quadErr, entry.applyOpt, entry.applyMid,
+                         entry.gate, entry.newQual, entry.minCos);
+      heapEntries.push_back(entry);
+    }
+    collapseLogger.writeInitialHeap(heapEntries);
+
+    // Dump the per-vertex accumulated quadrics (post-InitQuadric, pre-collapse)
+    // so the QMAT port can verify InitQuadric vertex-by-vertex.
+    std::vector<VertexQuadricEntry> vqs;
+    vqs.reserve(m.vert.size());
+    for (auto vi = m.vert.begin(); vi != m.vert.end(); ++vi)
+    {
+      if ((*vi).IsD()) continue;
+      const vcg::math::Quadric<double>& q = tri::QHelper::Qd(*vi);
+      VertexQuadricEntry ve;
+      ve.id = static_cast<int>(vcg::tri::Index(m, *vi));
+      ve.pos[0] = (*vi).P()[0]; ve.pos[1] = (*vi).P()[1]; ve.pos[2] = (*vi).P()[2];
+      for (int k = 0; k < 6; ++k) ve.a[k] = q.a[k];
+      for (int k = 0; k < 3; ++k) ve.b[k] = q.b[k];
+      ve.c = q.c;
+      vqs.push_back(ve);
+    }
+    collapseLogger.writeVertexQuadrics(vqs);
+  }
+
   if(Selected)
     TargetFaceNum= m.fn - (m.sfn-TargetFaceNum);
   DeciSession.SetTargetSimplices(TargetFaceNum);

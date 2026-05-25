@@ -16,11 +16,21 @@
 # Copyright (c) 2019 Collabora, Ltd. (Rylie Pavlik <rylie.pavlik@collabora.com>)
 # Redistribution and use is allowed according to the terms of the BSD license.
 
+# Optional vcpkg layout (set by vcpkg.cmake toolchain).
+set(_gmp_search_hints)
+if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+  list(APPEND _gmp_search_hints
+    "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
+endif()
+
 find_path(
   GMP_INCLUDE_DIR
   NAMES gmp.h
-  PATHS $ENV{GMPDIR})
-
+  HINTS
+    $ENV{GMPDIR}
+    ${GMP_ROOT}
+    ${_gmp_search_hints}
+  PATH_SUFFIXES include)
 
 if(GMP_INCLUDE_DIR)
   # Since the GMP version macros may be in a file included by gmp.h of the form
@@ -45,7 +55,21 @@ if(GMP_INCLUDE_DIR)
   endforeach()
 endif()
 
-find_library(GMP_LIBRARY gmp PATHS $ENV{GMPDIR})
+set(_gmp_lib_hints)
+if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+  list(APPEND _gmp_lib_hints
+    "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib"
+    "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/debug/lib")
+endif()
+
+find_library(
+  GMP_LIBRARY
+  NAMES gmp libgmp
+  HINTS
+    $ENV{GMPDIR}
+    ${GMP_ROOT}
+    ${_gmp_lib_hints}
+  PATH_SUFFIXES lib)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GMP

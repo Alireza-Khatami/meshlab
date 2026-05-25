@@ -10,7 +10,11 @@
       "toolchainFile": "C:/Users/alirz/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
         "Qt5_DIR": "C:/Users/alirz/Projects/vcpkg/vcpkg_installed/x64-windows/share/cmake/Qt5",
-        "MESHLAB_SCALAR": "float"
+        "MESHLAB_SCALAR": "float",
+        "VCPKG_INSTALLED_DIR": "C:/Users/alirz/Projects/vcpkg/vcpkg_installed",
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "MESHLAB_ALLOW_SYSTEM_CGAL": "OFF",
+        "MESHLAB_ALLOW_SYSTEM_BOOST": "OFF"
       }
     },
     {

@@ -37,6 +37,8 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
+#include <algorithm>
 #include <iomanip>
 #include <stdexcept>
 #ifdef _WIN32
@@ -47,21 +49,46 @@
 #  define CL_MKDIR(p) mkdir((p), 0755)
 #endif
 
+struct InitialHeapEntry
+{
+    int    v0_id;
+    int    v1_id;
+    double cost;
+    // Full ComputePriority breakdown (so the QMAT port can verify every stage).
+    double opt[3]  = {0, 0, 0};  // optimalPos
+    double quadErr = 0;          // ScaleFactor*Apply(opt), after QuadricEpsilon clamp
+    double applyOpt= 0;          // raw qq.Apply(optimalPos)
+    double applyMid= 0;          // raw qq.Apply(midpoint)
+    double gate    = 0;          // Qd(v0).Apply(mid)+Qd(v1).Apply(mid)
+    double newQual = 0;          // clamped newQual
+    double minCos  = 0;          // clamped+remapped MinCos
+};
+
+// One vertex's accumulated InitQuadric quadric (math::Quadric<double>: a[6],b[3],c).
+struct VertexQuadricEntry
+{
+    int    id;
+    double pos[3];
+    double a[6];
+    double b[3];
+    double c;
+};
+
 class CollapseLogger
 {
 public:
     CollapseLogger() = default;
     ~CollapseLogger() { close(); }
 
-    // Opens the output file.  Call before starting simplification.
+    // Opens collapse log + remembers mesh name for the initial-heap file.
     void open(const std::string& meshName)
     {
+        meshName_ = meshName;
         CL_MKDIR("collapse_records"); // no-op if already exists
         const std::string path = "collapse_records/" + meshName + "_collapse_records.jsonl";
         file_.open(path, std::ios::out | std::ios::trunc);
         if (!file_.is_open())
             throw std::runtime_error("CollapseLogger: cannot open " + path);
-        file_ << std::fixed << std::setprecision(6);
     }
 
     void close()
@@ -71,6 +98,71 @@ public:
 
     bool isOpen() const { return file_.is_open(); }
 
+    // All candidate collapses after Init(), sorted by cost ascending (same order as heap pops).
+    void writeInitialHeap(const std::vector<InitialHeapEntry>& entries)
+    {
+        if (meshName_.empty()) return;
+
+        std::vector<InitialHeapEntry> sorted = entries;
+        std::sort(sorted.begin(), sorted.end(),
+            [](const InitialHeapEntry& a, const InitialHeapEntry& b) { return a.cost < b.cost; });
+
+        const std::string path = "collapse_records/" + meshName_ + "_initial_heap_state_.json";
+        std::ofstream out(path, std::ios::out | std::ios::trunc);
+        if (!out.is_open())
+            throw std::runtime_error("CollapseLogger: cannot open " + path);
+
+        out << "{\"mesh\":\"" << meshName_ << "\","
+            << "\"heap_size\":" << sorted.size() << ","
+            << "\"order\":\"ascending_by_cost\","
+            << "\"entries\":[";
+
+        for (size_t i = 0; i < sorted.size(); ++i)
+        {
+            if (i) out << ',';
+            const auto& e = sorted[i];
+            out << "{\"rank\":" << i
+                << ",\"v0_id\":" << e.v0_id
+                << ",\"v1_id\":" << e.v1_id
+                << ",\"cost\":" << fmtCost(e.cost)
+                << ",\"opt\":[" << fmtCost(e.opt[0]) << ',' << fmtCost(e.opt[1]) << ',' << fmtCost(e.opt[2]) << ']'
+                << ",\"quadErr\":" << fmtCost(e.quadErr)
+                << ",\"applyOpt\":" << fmtCost(e.applyOpt)
+                << ",\"applyMid\":" << fmtCost(e.applyMid)
+                << ",\"gate\":" << fmtCost(e.gate)
+                << ",\"newQual\":" << fmtCost(e.newQual)
+                << ",\"minCos\":" << fmtCost(e.minCos)
+                << '}';
+        }
+        out << "]}\n";
+    }
+
+    // Per-vertex accumulated quadrics right after InitQuadric (before any collapse).
+    // Writes collapse_records/<meshName>_vertex_quadrics_.json.
+    void writeVertexQuadrics(const std::vector<VertexQuadricEntry>& verts)
+    {
+        if (meshName_.empty()) return;
+        const std::string path = "collapse_records/" + meshName_ + "_vertex_quadrics_.json";
+        std::ofstream out(path, std::ios::out | std::ios::trunc);
+        if (!out.is_open())
+            throw std::runtime_error("CollapseLogger: cannot open " + path);
+
+        out << "{\"mesh\":\"" << meshName_ << "\",\"count\":" << verts.size() << ",\"verts\":[";
+        for (size_t i = 0; i < verts.size(); ++i)
+        {
+            if (i) out << ',';
+            const auto& v = verts[i];
+            out << "{\"id\":" << v.id
+                << ",\"pos\":[" << fmtCost(v.pos[0]) << ',' << fmtCost(v.pos[1]) << ',' << fmtCost(v.pos[2]) << ']'
+                << ",\"a\":[" << fmtCost(v.a[0]) << ',' << fmtCost(v.a[1]) << ',' << fmtCost(v.a[2]) << ','
+                              << fmtCost(v.a[3]) << ',' << fmtCost(v.a[4]) << ',' << fmtCost(v.a[5]) << ']'
+                << ",\"b\":[" << fmtCost(v.b[0]) << ',' << fmtCost(v.b[1]) << ',' << fmtCost(v.b[2]) << ']'
+                << ",\"c\":" << fmtCost(v.c)
+                << '}';
+        }
+        out << "]}\n";
+    }
+
     // Write one collapse record.
     void write(const vcg::tri::CollapseEvent& e)
     {
@@ -78,7 +170,7 @@ public:
 
         file_ << '{'
               << "\"idx\":"  << e.idx  << ','
-              << "\"cost\":" << e.cost << ','
+              << "\"cost\":" << fmtCost(e.cost) << ','
 
               << "\"edge\":{"
                 << "\"v0\":{\"id\":" << e.v0.id
@@ -96,7 +188,16 @@ public:
     }
 
 private:
+    std::string   meshName_;
     std::ofstream file_;
+
+    // Full double precision — avoids flat-region costs printing as 0.000000
+    static std::string fmtCost(double x)
+    {
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "%.17g", x);
+        return buf;
+    }
 
     static std::string pos3(const float p[3])
     {

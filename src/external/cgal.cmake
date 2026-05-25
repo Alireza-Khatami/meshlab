@@ -8,7 +8,10 @@ option(MESHLAB_ALLOW_SYSTEM_CGAL "Allow use of system-provided CGAL" ON)
 set(CGAL_VER 5.6)
 
 find_package(Threads REQUIRED)
-find_package(CGAL ${CGAL_VER} QUIET)
+
+if(MESHLAB_ALLOW_SYSTEM_CGAL)
+	find_package(CGAL ${CGAL_VER} QUIET)
+endif()
 
 if(MESHLAB_ALLOW_SYSTEM_CGAL AND TARGET CGAL::CGAL)
 	message(STATUS "- CGAL - using system-provided library")

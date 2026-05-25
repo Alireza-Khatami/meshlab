@@ -2,13 +2,16 @@
 
 ## Overview
 
-Each simplification run of **Simplification: Quadric Edge Collapse Decimation** produces one file:
+Each simplification run of **Simplification: Quadric Edge Collapse Decimation** produces two files:
 
 ```
-collapse_records/<meshName>_collapse_records.jsonl
+collapse_records/<meshName>_initial_heap_state_.json   # all candidates before any collapse
+collapse_records/<meshName>_collapse_records.jsonl     # one line per performed collapse
 ```
 
-The file is **JSONL** (JSON Lines) — one self-contained JSON object per line, one line per collapse, written in the exact order the collapses were performed.
+The JSONL file has one self-contained JSON object per line, one line per collapse, written in the exact order the collapses were performed.
+
+**Cost precision:** `cost` values use `%.17g` (full `double` precision), not 6 decimal places, so very small flat-region errors are not rounded to `0.000000`.
 
 ---
 
@@ -21,7 +24,37 @@ The file is **JSONL** (JSON Lines) — one self-contained JSON object per line, 
 
 ---
 
-## Record Structure
+## Initial Heap File (`<meshName>_initial_heap_state_.json`)
+
+Full schema for this file: **`md_files/initial_heap_state_schema.md`**
+
+Written once immediately after `Init()`, before the first collapse. Entries are sorted by **ascending cost** (same order the optimizer will pop from the heap).
+
+```json
+{
+  "mesh": "bunny",
+  "heap_size": 150000,
+  "order": "ascending_by_cost",
+  "entries": [
+    { "rank": 0, "v0_id": 42, "v1_id": 37, "cost": 1.23456789012345e-12 },
+    { "rank": 1, "v0_id": 10, "v1_id": 11, "cost": 2.34567890123456e-12 }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `mesh` | `string` | Mesh label passed from MeshLab |
+| `heap_size` | `int` | Number of candidate edge collapses in the initial heap |
+| `order` | `string` | Always `"ascending_by_cost"` |
+| `entries[].rank` | `int` | 0-based rank after sorting (0 = cheapest collapse) |
+| `entries[].v0_id` | `int` | Vertex that would be deleted if this collapse runs |
+| `entries[].v1_id` | `int` | Vertex that would survive |
+| `entries[].cost` | `float` | QEM priority / error for this edge |
+
+---
+
+## Collapse Record Structure (JSONL)
 
 ```json
 {

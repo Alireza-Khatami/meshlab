@@ -50,6 +50,28 @@ class MyTriEdgeCollapse: public vcg::tri::TriEdgeCollapseQuadric< CMeshO, Vertex
 public:
   typedef  vcg::tri::TriEdgeCollapseQuadric< CMeshO, VertexPair,  MyTriEdgeCollapse, QHelper> TECQ;
   inline MyTriEdgeCollapse(  const VertexPair &p, int i, BaseParameterClass *pp) :TECQ(p,i,pp){}
+
+  // For collapse logging (pos / _priority are protected in TriEdgeCollapse).
+  // Exposes the full ComputePriority breakdown captured at Init time so the QMAT
+  // port can verify each stage (optimalPos / QuadErr / Apply / newQual / MinCos /
+  // gate), not just the final cost.
+  void edgeCost(const CMeshO& m, int& v0_id, int& v1_id, double& cost,
+                double opt[3], double& quadErr, double& applyOpt, double& applyMid,
+                double& gate, double& newQual, double& minCos) const
+  {
+    v0_id = static_cast<int>(vcg::tri::Index(m, *pos.cV(0)));
+    v1_id = static_cast<int>(vcg::tri::Index(m, *pos.cV(1)));
+    cost  = static_cast<double>(_priority);
+    opt[0] = this->optimalPos[0];
+    opt[1] = this->optimalPos[1];
+    opt[2] = this->optimalPos[2];
+    quadErr  = this->dbgQuadErr;
+    applyOpt = this->dbgApply;
+    applyMid = this->dbgApplyMid;
+    gate     = this->dbgGate;
+    newQual  = this->dbgNewQual;
+    minCos   = this->dbgMinCos;
+  }
 };
 
 class MyTriEdgeCollapseQTex: public TriEdgeCollapseQuadricTex< CMeshO, VertexPair, MyTriEdgeCollapseQTex, QuadricTexHelper<CMeshO> > {
